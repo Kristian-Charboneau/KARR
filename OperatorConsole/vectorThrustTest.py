@@ -74,9 +74,6 @@ def calc(x, y, z):  # x, y, and z axis
     forward. These values are changed back to -100 to 100.
     """
     global LF, RF, LB, RB
-    # x += 100
-    # y += 100
-    # z += 100
 
     LFx = x
     RFx = -x
@@ -102,17 +99,6 @@ def calc(x, y, z):  # x, y, and z axis
     RF = (RF+RFz)/2
     LB = (LB+LBz)/2
     RB = (RB+RBz)/2
-
-    # # Initial mixing
-    # LF = (x + y + z-200)
-    # RF = (y - x - z + 200)
-    # LB = (x - y + z-200)
-    # RB = (-y - x + z+200)
-
-    # LF = (x + y + z)/3.0
-    # RF = (-1*x + y - z)/3.0
-    # LB = (x - y - z)/3.0
-    # RB = (-1*x - y + z)/3.0
 
     print(LF, RF, LB, RB)
     values = [abs(LF), abs(RF), abs(LB), abs(RB)]
@@ -142,20 +128,6 @@ def calc(x, y, z):  # x, y, and z axis
             RB = int(RB+100-values[3])
         else:
             RB = int(RB-(100-values[3]))
-
-    # # adjust so that thrust is maximised
-    # if (int(values[3]) is not 0) and not checkEqual(values):
-    #     # print(values[3])
-    #     print("adjusting!")
-    #     LF = int(LF * (100/values[3]))
-    #     RF = int(RF * (100/values[3]))
-    #     LB = int(LB * (100/values[3]))
-    #     RB = int(RB * (100/values[3]))
-    # else:
-    #     LF = int(LF * 3)
-    #     RF = int(RF * 3)
-    #     LB = int(LB * 3)
-    #     RB = int(RB * 3)
 
 if __name__ == '__main__':
     main()
