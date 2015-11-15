@@ -3,7 +3,9 @@
 @author:Kristian Charboneau
 
 This program can be used on its own or integrated into a GUI application.
-When run standalone the main() method manages the program.
+When run standalone the main() method manages the program. It has a simple text
+based gui when run standalone.
+
 To integrate into an external GUI the startup() ans update() methods should be
 called. Startup() should be called once, at the beginning of the program.
 Update() should be called each cycle thru the GUI's mainloop.

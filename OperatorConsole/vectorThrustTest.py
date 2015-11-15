@@ -68,32 +68,94 @@ def checkEqual(lst):
 
 
 def calc(x, y, z):  # x, y, and z axis
+    """
+    Calculates the values for each motor in a vectored thrust configuration.
+    values are changed to 0 to 200, with 100 being off, 0 reverse, and 200
+    forward. These values are changed back to -100 to 100.
+    """
     global LF, RF, LB, RB
+    # x += 100
+    # y += 100
+    # z += 100
 
-    # Initial mixing
-    LF = (x + y + z)/3.0
-    RF = (-1*x + y - z)/3.0
-    LB = (x - y - z)/3.0
-    RB = (-1*x - y + z)/3.0
+    LFx = x
+    RFx = -x
+    LBx = x
+    RBx = -x
 
+    LFy = y
+    RFy = y
+    LBy = -y
+    RBy = -y
+
+    LFz = z
+    RFz = -z
+    LBz = -z
+    RBz = z
+
+    LF = (LFx+LFy)/2
+    RF = -(RFx+RFy)/2
+    LB = -(LBx+LBy)/2
+    RB = (RBx+RBy)/2
+
+    LF = (LF+LFz)/2
+    RF = (RF+RFz)/2
+    LB = (LB+LBz)/2
+    RB = (RB+RBz)/2
+
+    # # Initial mixing
+    # LF = (x + y + z-200)
+    # RF = (y - x - z + 200)
+    # LB = (x - y + z-200)
+    # RB = (-y - x + z+200)
+
+    # LF = (x + y + z)/3.0
+    # RF = (-1*x + y - z)/3.0
+    # LB = (x - y - z)/3.0
+    # RB = (-1*x - y + z)/3.0
+
+    print(LF, RF, LB, RB)
     values = [abs(LF), abs(RF), abs(LB), abs(RB)]
     print(values)
     values.sort()
     print(values)
 
     # adjust so that thrust is maximised
-    if (int(values[3]) is not 0) and not checkEqual(values):
-        # print(values[3])
+    if (int(values[3]) is not 0):
         print("adjusting!")
-        LF = int(LF * (100/values[3]))
-        RF = int(RF * (100/values[3]))
-        LB = int(LB * (100/values[3]))
-        RB = int(RB * (100/values[3]))
-    else:
-        LF = int(LF * 3)
-        RF = int(RF * 3)
-        LB = int(LB * 3)
-        RB = int(RB * 3)
+        if LF > 0:
+            LF = int(LF+100-values[3])
+        else:
+            LF = int(LF-(100-values[3]))
+
+        if RF > 0:
+            RF = int(RF+100-values[3])
+        else:
+            RF = int(RF-(100-values[3]))
+
+        if LB > 0:
+            LB = int(LB+100-values[3])
+        else:
+            LB = int(LB-(100-values[3]))
+
+        if RB > 0:
+            RB = int(RB+100-values[3])
+        else:
+            RB = int(RB-(100-values[3]))
+
+    # # adjust so that thrust is maximised
+    # if (int(values[3]) is not 0) and not checkEqual(values):
+    #     # print(values[3])
+    #     print("adjusting!")
+    #     LF = int(LF * (100/values[3]))
+    #     RF = int(RF * (100/values[3]))
+    #     LB = int(LB * (100/values[3]))
+    #     RB = int(RB * (100/values[3]))
+    # else:
+    #     LF = int(LF * 3)
+    #     RF = int(RF * 3)
+    #     LB = int(LB * 3)
+    #     RB = int(RB * 3)
 
 if __name__ == '__main__':
     main()
