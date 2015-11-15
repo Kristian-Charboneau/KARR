@@ -1,0 +1,1 @@
+This folder is for organizing the various types of documentation files that are needed for KARR. This includes images, schematics, CAD files, parts list, etc. Note the actual documentation (Technical Report) is accessed through the project's wiki.
