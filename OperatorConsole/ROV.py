@@ -11,6 +11,7 @@ called. Startup() should be called once, at the beginning of the program.
 Update() should be called each cycle thru the GUI's mainloop.
 """
 import serial
+import pickle
 from Packet import Packet
 import HID
 
@@ -22,8 +23,24 @@ except:
     print("Failed to start gamepad interface, continuing anyways.")
     hid_ = False
 
+ser = serial.Serial('/dev/', 250000)
 
-ser = serial.Serial()
+save_file = "settings.obj"
+save_data = []
+# save_data structure: [LF_trim, RF_trim, LB_trim, RB_trim, LFV_trim, RFV_trim,
+# LBV_trim, RBV_trim, brightness]
+
+###############################################################################
+# variables to store settings
+###############################################################################
+LF_trim = 0
+RF_trim = 0
+LB_trim = 0
+RB_trim = 0
+LFV_trim = 0
+RFV_trim = 0
+LBV_trim = 0
+RBV_trim = 0
 
 ###############################################################################
 # variables to store hardware and motion states
@@ -39,9 +56,51 @@ brightness = 0
 
 
 def startup():
-    # do setup and initial stuff
+    """
+    - load settings from file
+    - establish communication with Propeller Chip
+    """
+
+    # load settings from file
+    global save_data
+    global LF_trim, RF_trim, LB_trim, RB_trim, LFV_trim, RFV_trim, LBV_trim
+    global RBV_trim, brightness
+
+    try:
+        fileObject = open(save_file, 'r')
+    except:  # use default values if no save file found
+        pass
+    else:  # load values from savefile
+        save_data = pickle.load(fileObject)
+        LF_trim = save_data[0]
+        RF_trim = save_data[1]
+        LB_trim = save_data[2]
+        RB_trim = save_data[3]
+        LFV_trim = save_data[4]
+        RFV_trim = save_data[5]
+        LBV_trim = save_data[6]
+        RBV_trim = save_data[7]
+        brightness = save_data[8]
+
     # check for communication with rov
     ser.setPort("")
+
+
+def shutdown():
+    """
+    Shutdown procedures:
+    - save settings to file
+    - tell Propeller Chip to start shutdown sequence
+    - Tell system to shutdown
+    """
+    fileObject = open(save_file, 'wb')
+    pickle.dump(save_data, fileObject)
+
+    command = "/usr/bin/sudo /sbin/shutdown -r now"
+    import subprocess
+    process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+    output = process.communicate()[0]
+    print output
 
 
 def move_x(value):

@@ -70,8 +70,6 @@ def checkEqual(lst):
 def calc(x, y, z):  # x, y, and z axis
     """
     Calculates the values for each motor in a vectored thrust configuration.
-    values are changed to 0 to 200, with 100 being off, 0 reverse, and 200
-    forward. These values are changed back to -100 to 100.
     """
     global LF, RF, LB, RB
 
