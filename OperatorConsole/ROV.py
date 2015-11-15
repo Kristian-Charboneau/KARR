@@ -1,6 +1,12 @@
 #! /usr/bin/env python
 """Main application for KARR. Provide's a basic "gui" using the terminal.
 @author:Kristian Charboneau
+
+This program can be used on its own or integrated into a GUI application.
+When run standalone the main() method manages the program.
+To integrate into an external GUI the startup() ans update() methods should be
+called. Startup() should be called once, at the beginning of the program.
+Update() should be called each cycle thru the GUI's mainloop.
 """
 import serial
 from Packet import Packet
@@ -65,11 +71,17 @@ def light(value):
 
 
 def camera_pan(value):
+    """
+    Not used in the current version of KARR (kept for future use)
+    """
     global pan
     pan = value
 
 
 def camera_tilt(value):
+    """
+    Not used in the current version of KARR (kept for future use)
+    """
     global tilt
     tilt = value
 
