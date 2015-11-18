@@ -14,15 +14,47 @@ import serial
 import pickle
 from Packet import Packet
 import HID
+import time
+
+profile = True  # set to True to enable profiling feaures
+errors = ""  # used to store error messages
+
+###############################################################################
+# set up the gamepad
+###############################################################################
 
 hid_ = True
 hid = object
 try:
     hid = HID.Gamepad(-100, 100)
 except:
-    print("Failed to start gamepad interface, continuing anyways.")
-    hid_ = False
+    error = ("ERROR: Failed to start gamepad interface, continuing anyways." +
+             "Program operation will be severly limited." +
+             "Check that all tether cables are securly connected and that " +
+             "the gamepad is plugged in to the tether box.")
+    errors += error
+    print error
 
+    hid_connected = False
+
+bmap = {  # Button mapping. Function: corresponding method
+    'X': hid.get_lx,
+    'Y': hid.get_ly,
+    'Z': None,
+    'Xr': hid.get_ry,
+    'Yr': None,
+    'Zr': hid.get_rx,
+    'Light_up': hid.get_r1,  # increase brightness
+    'Light_down': hid.get_l1,  # decrease brightness
+    'Screen+': hid.get_start,  # cycle screens right
+    'Screen-': None,  # cycle screens left
+    'Select_left': hid.get_dpad_left,
+    'Select_right': hid.get_dpad_right,
+    'Select_up': hid.get_dpad_up,
+    'Select_down': hid.get_dpad_down,
+    'Enter': hid.get_x
+
+}
 ser = serial.Serial('/dev/', 250000)
 
 save_file = "settings.obj"
@@ -60,6 +92,7 @@ def startup():
     - load settings from file
     - establish communication with Propeller Chip
     """
+    start_time = time.time()
 
     # load settings from file
     global save_data
@@ -84,6 +117,10 @@ def startup():
 
     # check for communication with rov
     ser.setPort("")
+
+    end_time = time.time()
+    if profile:
+        exec_time = end_time - start_time
 
 
 def shutdown():
@@ -167,6 +204,7 @@ def update():
     gamepad, sends new info to the microcontroller and recieves info from the
     microcontroller. Essentially this is the main function of the ROV program.
     """
+    start_time = time.time()
     # update gamepad controls (assign values to velocity and rotation)
     #
     # send information to microcontroller
@@ -182,36 +220,87 @@ def update():
         pass  # update controls
     # update other stuff that doesn't depend on the gamepad
 
+    end_time = time.time()
+    if profile:
+        exec_time = end_time - start_time
+
+
+###############################################################################
+# Screen methods
+###############################################################################
+def screen1():
+    screen = ("Depth = {}ft | Heading = {} | Velocity(ft/s) = {} | "
+              "Acceleration() = {}"
+              "\nBrighteness = \{}".format(depth, heading,
+                                           velocity_toString(),
+                                           acceleration_toString(),
+                                           brightness))
+    return(screen)
+
+
+def screen2():
+    screen = "Screen 2"
+    return(screen)
+
+###############################################################################
+# Add the method for each screen to the "screens" list.
+# This lets basic_gui know which screens are available.
+# If more complex functionality is needed this may change to a dictionary, or
+# nested list.
+###############################################################################
+screens = [screen1]
+
 
 def basic_gui():
     """
     Creates a very basic "GUI" for displaying data and modifying things like
     the trim values. Uses the terminal for output. It basically just prints the
-    same lines over and over again. To make the output look better the terminal
-    should either be reistricted to the same size as the output or another
-    window (perhaps a video feed viewer) should be used to cover the rest of
-    the terminal. While this isn't fancy it should have less overhead than a
-    full gui (I'm assuming) and it can be accessed over SSH, way may be useful
-    at some point here or there.
+    same lines over and over again, with a "clear" command used to clean things
+    up (so there aren't thousands of lines on the terminal). The output is
+    split up into "screens". One screen is displayed at a time.
+
+    Each screen should be a method that generates and returns a string. That
+    string is then printed to the screen by basic_gui(). The screen methods are
+    stored in a list called "screens". Basic_gui will use this list when the
+    user cycles through screens.
+
+    While this isn't fancy it should have less overhead than a full gui
+    (I'm assuming) and it can be accessed over SSH, which may be useful at some
+    point here or there.
     """
+    start_time = time.time()
 
     # form1 = ("Depth = %sft | Heading = %s | Velocity(ft/s) = %d | "
     #          "Acceleration() = %d"
     #          "\nBrighteness = %\%s" % depth % heading % velocity_toString()
     #          % acceleration_toString() % brightness)
-    form1 = ("Depth = {}ft | Heading = {} | Velocity(ft/s) = {} | "
-             "Acceleration() = {}"
-             "\nBrighteness = \{}".format(depth, heading, velocity_toString(),
-                                          acceleration_toString(), brightness))
-    print form1
+
+    # check if a cycle button is pressed
+    # if so, increment or decrement screen index
+    # run selected screen
+    # check if output needs to be updated (old_out != new_out)
+
+    if bmap['Screen+']() == 1:
+        print(screens)
+
+    print(screen1())
+
+    end_time = time.time()
+    if profile:
+        exec_time = end_time - start_time
 
 
 def main():
+    start_time = time.time()
     startup()
     update()
     basic_gui()
     # while True:
     print(hid.get_x())
+
+    end_time = time.time()
+    if profile:
+        exec_time = end_time - start_time
 
 
 def __init__():

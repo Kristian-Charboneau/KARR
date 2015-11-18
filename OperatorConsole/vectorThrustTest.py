@@ -14,6 +14,7 @@ Each motor has a range of -100 to 100. (-100 being reverse, 0 off, 100 forward)
 """
 import HID
 import sys
+import time
 
 try:
     hid = HID.Gamepad()
@@ -27,9 +28,12 @@ RF = 0  # Right front motor
 LB = 0  # Left back motor
 RB = 0  # Right back motor
 
+profile = True  # set to True to enable profiling feaures
+
 
 def main():
     while True:
+        start_time = time.time()
         if hid is None:  # use keyboard input
             if input("Continue? (1/0)") == 1:
                 # global y_axis
@@ -61,6 +65,9 @@ def main():
         # sys.stderr.write("\x1b[2J\x1b[H")  # clear the screen
         print("X:{} Y:{} Z:{}".format(x_axis, y_axis, z_axis))
         print("{}    {}\n{}    {}".format(LF, RF, LB, RB))
+        end_time = time.time()
+        if profile:
+            print(end_time - start_time)
 
 
 def checkEqual(lst):
