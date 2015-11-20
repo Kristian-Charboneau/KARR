@@ -1,1 +1,1 @@
-This folder is for organizing the various types of documentation files that are needed for KARR. This includes images, schematics, CAD files, parts list, etc. Note the actual documentation (Technical Report) is accessed through the project's wiki.
+This folder is for organizing the various types of documentation files that are needed for KARR. This includes images, schematics, CAD files, parts list, etc. A pdf of the tech report will also be available here as well. Note that the most up-to-date version of the technical report is available through the project's Github wiki.

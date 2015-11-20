@@ -12,11 +12,15 @@ Update() should be called each cycle thru the GUI's mainloop.
 """
 import serial
 import pickle
+import time
+import sys
+
 from Packet import Packet
 import HID
-import time
+import profiler
 
-profile = True  # set to True to enable profiling feaures
+profile = profiler.profiler
+enable_profile = True  # set to True to enable profiling feaures
 errors = ""  # used to store error messages
 
 ###############################################################################
@@ -119,7 +123,7 @@ def startup():
     ser.setPort("")
 
     end_time = time.time()
-    if profile:
+    if enable_profile:
         exec_time = end_time - start_time
 
 
@@ -221,7 +225,7 @@ def update():
     # update other stuff that doesn't depend on the gamepad
 
     end_time = time.time()
-    if profile:
+    if enable_profile:
         exec_time = end_time - start_time
 
 
@@ -242,13 +246,24 @@ def screen2():
     screen = "Screen 2"
     return(screen)
 
+
+def error_screen():
+    if errors == "":
+        return("No errors reported")
+    else:
+        return(errors)
+
+
+def profile_screen():
+    return profile.toString()
+
 ###############################################################################
 # Add the method for each screen to the "screens" list.
 # This lets basic_gui know which screens are available.
 # If more complex functionality is needed this may change to a dictionary, or
 # nested list.
 ###############################################################################
-screens = [screen1]
+screens = [screen1, screen2, error_screen, profile_screen]
 
 
 def basic_gui():
@@ -279,14 +294,22 @@ def basic_gui():
     # if so, increment or decrement screen index
     # run selected screen
     # check if output needs to be updated (old_out != new_out)
+    index = 0
+    _buffer = ""  # store the output text from the active screen
 
     if bmap['Screen+']() == 1:
-        print(screens)
+        index += 1
+        if index >= len(screens):
+            index = 0
 
-    print(screen1())
+    _buffer = screens[index]()
+
+    # Clear and print _buffer to screen
+    sys.stderr.write("\x1b[2J\x1b[H")
+    print(_buffer)
 
     end_time = time.time()
-    if profile:
+    if enable_profile:
         exec_time = end_time - start_time
 
 
@@ -299,7 +322,7 @@ def main():
     print(hid.get_x())
 
     end_time = time.time()
-    if profile:
+    if enable_profile:
         exec_time = end_time - start_time
 
 
