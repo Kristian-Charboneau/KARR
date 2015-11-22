@@ -1,15 +1,12 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 """Module for managing data packets. Useful for sending data to a
-microcontroller over a serial connection. This module can convert a list of
-integers into a string of bytes, convert a string of bytes into a list, and
-validate the checksum of a packet. The range of allowed numbers is 0-254 (255
-is reserved as the Start and End value). While this is limited, it should be
-sufficient for simple communication needs.
+microcontroller over a serial connection. This module adds control characters
+and a checksum to a list of integers. It returns the new list.
 
-Packet structure: Each packet consists of a start and end byte, mode byte, data
-bytes, and checksum byte. For example:
-Start,Mode,Data1,Data2,Data3,Checksum,End
+Packet structure: Each packet consists of a start and end char, data
+ints, and a checksum int. For example:
+Start,Data1,Data2,Data3,Checksum,End
 
 @author:Kristian Charboneau
 """
@@ -21,48 +18,54 @@ class Packet:
     def __init__(self):
         pass
 
-    def to_packet(self, input):
+    def to_packet(self, values):
         """
-        Converts a list to a packetized string.
-        Returns a string, or 0 if there was a failure.
+        Adds control chars and checksum int to a list of ints
         """
-        input = bytearray(input)
-        packet = 0
-        for i in input:
-            if i < 0 or i > 254:
-                return 0
-            else:
-                print("i%s" % i)
-                # print str(l)
-                try:
-                    packet += i
-                except:
-                    pass
-            print("Packet:%d" % packet.decode("utf-8"))
+        checksum = 0
+        for i in values:  # calculate checksum
+            checksum = checksum ^ i
+        values.insert(0, '<')
+        values.append(checksum)
+        values.append('>')
 
-        return(packet)
+        return(values)
 
-    def to_list(self, string):
+    def to_list(self, values):
         """
-        Converts a packetized string to a list.
+        Strips the control characters and checksum from a list of intergers.
         """
-        pass
+        values.remove('>')
+        values.remove('<')
+        values.pop()
+        return values
 
-    def validate(self, string):
+    def validate(self, values):
         """
         Validates a packetized string. Returns 1 for success and 0 for failure.
         """
-        pass
+        values.remove('>')
+        values.remove('<')
+        packet_checksum = values.pop()
+
+        checksum = 0
+        for i in values:  # calculate checksum
+            checksum = checksum ^ i
+
+        if checksum == packet_checksum:
+            return True
+        else:
+            return False
 
     def gen_checksum(self, packet):
         """
         Generate a checksum of a packet. The method used is a simple XOR
-        method. Code from "http://stackoverflow.com/questions/26517869/creating
-        -xor-checksum-of-all-bytes-in-hex-string-in-python"
+        method.
         """
         checksum = 0
-        for el in packet:
-            checksum ^= ord(el)
+        for i in packet:  # calculate checksum
+            checksum = checksum ^ i
+        return checksum
 
 if __name__ == '__main__':
     p = Packet()

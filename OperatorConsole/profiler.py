@@ -7,10 +7,18 @@ class profiler:
     """
     profiles = {}  # the dictionary storing all the exec time values
 
-    def add(self, profile):
-        # self.profiles
-        # profiles = {}
+    def __init__(self):
         pass
 
+    def add(self, profile):
+        try:
+            self.profiles.update(profile)
+        except:
+            pass
+
     def toString(self):
-        pass
+        msg = ""
+        for key in self.profiles:
+            msg += "{}: {}ms\n".format(key, float('%.3f' %
+                                       (self.profiles[key]*1000.0)))
+        return msg

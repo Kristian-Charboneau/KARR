@@ -14,20 +14,22 @@ import serial
 import pickle
 import time
 import sys
+from datetime import date
 
 from Packet import Packet
 import HID
 import profiler
+import error_handler
 
-profile = profiler.profiler
+profile = profiler.profiler()
 enable_profile = True  # set to True to enable profiling feaures
-errors = ""  # used to store error messages
+errors = error_handler.error_handler()  # used to store error messages
 
 ###############################################################################
 # set up the gamepad
 ###############################################################################
 
-hid_ = True
+hid_enable = True
 hid = object
 try:
     hid = HID.Gamepad(-100, 100)
@@ -36,30 +38,54 @@ except:
              "Program operation will be severly limited." +
              "Check that all tether cables are securly connected and that " +
              "the gamepad is plugged in to the tether box.")
-    errors += error
+    errors.add(error)
     print error
 
-    hid_connected = False
+    hid_enable = False
+    time.sleep(1)  # give the user a chance to read message
 
-bmap = {  # Button mapping. Function: corresponding method
-    'X': hid.get_lx,
-    'Y': hid.get_ly,
-    'Z': None,
-    'Xr': hid.get_ry,
-    'Yr': None,
-    'Zr': hid.get_rx,
-    'Light_up': hid.get_r1,  # increase brightness
-    'Light_down': hid.get_l1,  # decrease brightness
-    'Screen+': hid.get_start,  # cycle screens right
-    'Screen-': None,  # cycle screens left
-    'Select_left': hid.get_dpad_left,
-    'Select_right': hid.get_dpad_right,
-    'Select_up': hid.get_dpad_up,
-    'Select_down': hid.get_dpad_down,
-    'Enter': hid.get_x
 
-}
-ser = serial.Serial('/dev/', 250000)
+def off():
+    return 0
+
+if hid_enable:
+    bmap = {  # Button mapping. Function: corresponding method
+        'X': hid.get_lx,
+        'Y': hid.get_ly,
+        'Z': None,
+        'Xr': hid.get_ry,
+        'Yr': None,
+        'Zr': hid.get_rx,
+        'Light_up': hid.get_r1,  # increase brightness
+        'Light_down': hid.get_l1,  # decrease brightness
+        'Screen+': hid.get_start,  # cycle screens right
+        'Screen-': None,  # cycle screens left
+        'Select_left': hid.get_dpad_left,
+        'Select_right': hid.get_dpad_right,
+        'Select_up': hid.get_dpad_up,
+        'Select_down': hid.get_dpad_down,
+        'Enter': hid.get_x
+    }
+else:  # set each function to off
+    bmap = {  # Button mapping. Function: corresponding method
+        'X': off,
+        'Y': off,
+        'Z': off,
+        'Xr': off,
+        'Yr': off,
+        'Zr': off,
+        'Light_up': off,  # increase brightness
+        'Light_down': off,  # decrease brightness
+        'Screen+': off,  # cycle screens right
+        'Screen-': off,  # cycle screens left
+        'Select_left': off,
+        'Select_right': off,
+        'Select_up': off,
+        'Select_down': off,
+        'Enter': off
+    }
+
+# ser = serial.Serial('/dev/', 250000)
 
 save_file = "settings.obj"
 save_data = []
@@ -82,13 +108,22 @@ RBV_trim = 0
 # variables to store hardware and motion states
 ###############################################################################
 velocity = [0, 0, 0]  # linear velocity on x, y, and z axis
-rotation = [0, 0, 0]  # rotational speed around x, y, and z axis
-light = 0  # Light brighteness. 0 = no light, 100 = full brightness
+rotation = [0, 0, 0]  # rotational velocity around x, y, and z axis
+
+hlf = 0  # horizontal left front
+hlb = 0  # horizontal left back
+hrf = 0  # horizontal right front
+hrb = 0  # horizontal right back
+vlf = 0  # vertical left front
+vlb = 0  # vertical left back
+vrf = 0  # vertical right front
+vrb = 0  # vertical right back
+
+brightness = 0  # Light brighteness. 0 = no light, 100 = full brightness
 pan = 0
 tilt = 0
 depth = 0
 heading = ""
-brightness = 0
 
 
 def startup():
@@ -96,9 +131,11 @@ def startup():
     - load settings from file
     - establish communication with Propeller Chip
     """
-    start_time = time.time()
+    start_time = time.clock()
 
-    # load settings from file
+###############################################################################
+# load settings from file
+###############################################################################
     global save_data
     global LF_trim, RF_trim, LB_trim, RB_trim, LFV_trim, RFV_trim, LBV_trim
     global RBV_trim, brightness
@@ -118,13 +155,20 @@ def startup():
         LBV_trim = save_data[6]
         RBV_trim = save_data[7]
         brightness = save_data[8]
+###############################################################################
 
     # check for communication with rov
-    ser.setPort("")
+    try:
+        # ser.setPort("")
+        pass
+    except:
+        errors.add("ERROR: Can't connect to serial port.")
+        print("ERROR: Can't connect to serial port.")
+        time.sleep(1)
 
-    end_time = time.time()
+    end_time = time.clock()
     if enable_profile:
-        exec_time = end_time - start_time
+        profile.add({"Startup": end_time - start_time})
 
 
 def shutdown():
@@ -144,6 +188,11 @@ def shutdown():
     print output
 
 
+###############################################################################
+# Not needed in the current version. Intended for when this file is loaded as a
+# module instead of used standalone. Allows the parent program to directly set
+# movement and rotation values.
+###############################################################################
 def move_x(value):
     pass
 
@@ -186,6 +235,7 @@ def camera_tilt(value):
     """
     global tilt
     tilt = value
+###############################################################################
 
 
 def velocity_toString():
@@ -202,13 +252,70 @@ def acceleration_toString():
     return(string)
 
 
+def calc_thrust(x, y, z):
+    """
+    Calculates the values for each motor in a vectored thrust configuration.
+    """
+    global hlf, hrf, hlb, hrb
+
+    LFx = x
+    RFx = -x
+    LBx = x
+    RBx = -x
+
+    LFy = y
+    RFy = y
+    LBy = -y
+    RBy = -y
+
+    LFz = z
+    RFz = -z
+    LBz = -z
+    RBz = z
+
+    hlf = (LFx+LFy)/2
+    hrf = -(RFx+RFy)/2
+    hlb = -(LBx+LBy)/2
+    hrb = (RBx+RBy)/2
+
+    hlf = (hlf+LFz)/2
+    hrf = (hrf+RFz)/2
+    hlb = (hlb+LBz)/2
+    hrb = (hrb+RBz)/2
+
+    values = [abs(hlf), abs(hrf), abs(hlb), abs(hrb)]
+    values.sort()
+
+    # adjust so that thrust is maximised
+    if (int(values[3]) is not 0):
+        if hlf > 0:
+            hlf = int(hlf+100-values[3])
+        else:
+            hlf = int(hlf-(100-values[3]))
+
+        if hrf > 0:
+            hrf = int(hrf+100-values[3])
+        else:
+            hrf = int(hrf-(100-values[3]))
+
+        if hlb > 0:
+            hlb = int(hlb+100-values[3])
+        else:
+            hlb = int(hlb-(100-values[3]))
+
+        if hrb > 0:
+            hrb = int(hrb+100-values[3])
+        else:
+            hrb = int(hrb-(100-values[3]))
+
+
 def update():
     """
     Should be called every cycle thru a mainloop. This gets input from the
     gamepad, sends new info to the microcontroller and recieves info from the
     microcontroller. Essentially this is the main function of the ROV program.
     """
-    start_time = time.time()
+    start_time = time.clock()
     # update gamepad controls (assign values to velocity and rotation)
     #
     # send information to microcontroller
@@ -220,25 +327,33 @@ def update():
     #
     # get info from IMU
     #   - velocity, acceleration, rotation, heading
-    if hid_:
-        pass  # update controls
-    # update other stuff that doesn't depend on the gamepad
 
-    end_time = time.time()
+    # horizontal thrusters ####################################################
+    y_axis = bmap['Y']()  # Left joystick Y axis
+    x_axis = bmap['X']()  # Left joystick X axis
+    zr_axis = bmap['Zr']()  # Right joystick X axis
+    calc_thrust(y_axis, x_axis, zr_axis)
+
+
+
+    end_time = time.clock()
     if enable_profile:
-        exec_time = end_time - start_time
+        profile.add({"update": end_time - start_time})
 
 
 ###############################################################################
 # Screen methods
 ###############################################################################
-def screen1():
-    screen = ("Depth = {}ft | Heading = {} | Velocity(ft/s) = {} | "
+def main_screen():
+    """
+    Displays important system stats such as heading depth and brightness
+    """
+    screen = ("Depth = {}ft\nHeading = {}\nVelocity(ft/s) = {}\n"
               "Acceleration() = {}"
-              "\nBrighteness = \{}".format(depth, heading,
-                                           velocity_toString(),
-                                           acceleration_toString(),
-                                           brightness))
+              "\nBrighteness = {}".format(depth, heading,
+                                          velocity_toString(),
+                                          acceleration_toString(),
+                                          brightness))
     return(screen)
 
 
@@ -248,14 +363,31 @@ def screen2():
 
 
 def error_screen():
-    if errors == "":
-        return("No errors reported")
-    else:
-        return(errors)
+    """
+    Displays system errors
+    """
+    return(errors.toString())
 
 
 def profile_screen():
+    """
+    displays info from the profiling system (execution time for different
+    portions of the software)
+    """
     return profile.toString()
+
+
+def status_screen():
+    """
+    Shows the status of system variable not present on the main screen. Useful
+    for debugging purposes.
+    """
+    global hlf, hlb, hrf, hrb, vlf, vlb, vrf, vrb
+    screen = "System Status:\n"
+    screen += "h:{} {}\n  {} {}\nv:{} {}\n  {} {}\n".format(hlf, hrf, hlb,
+                                                            hrb, vlf, vrf,
+                                                            vlb, vrb)
+    return screen
 
 ###############################################################################
 # Add the method for each screen to the "screens" list.
@@ -263,7 +395,10 @@ def profile_screen():
 # If more complex functionality is needed this may change to a dictionary, or
 # nested list.
 ###############################################################################
-screens = [screen1, screen2, error_screen, profile_screen]
+screens = [main_screen, screen2, error_screen, profile_screen, status_screen]
+screen_index = 0
+current = 0
+previous = 0
 
 
 def basic_gui():
@@ -283,7 +418,9 @@ def basic_gui():
     (I'm assuming) and it can be accessed over SSH, which may be useful at some
     point here or there.
     """
-    start_time = time.time()
+    start_time = time.clock()
+    global current, previous
+    current = bmap['Screen+']()
 
     # form1 = ("Depth = %sft | Heading = %s | Velocity(ft/s) = %d | "
     #          "Acceleration() = %d"
@@ -294,36 +431,37 @@ def basic_gui():
     # if so, increment or decrement screen index
     # run selected screen
     # check if output needs to be updated (old_out != new_out)
-    index = 0
+    global screen_index
     _buffer = ""  # store the output text from the active screen
 
-    if bmap['Screen+']() == 1:
-        index += 1
-        if index >= len(screens):
-            index = 0
+    if bmap['Screen+']() == 1 and previous == 0:
+        screen_index += 1
+        if screen_index >= len(screens):
+            screen_index = 0
 
-    _buffer = screens[index]()
+    _buffer = screens[screen_index]()
 
     # Clear and print _buffer to screen
     sys.stderr.write("\x1b[2J\x1b[H")
     print(_buffer)
 
-    end_time = time.time()
+    previous = current
+
+    end_time = time.clock()
     if enable_profile:
-        exec_time = end_time - start_time
+        profile.add({"gui": end_time - start_time})
 
 
 def main():
-    start_time = time.time()
     startup()
-    update()
-    basic_gui()
-    # while True:
-    print(hid.get_x())
+    while True:
+        start_time = time.clock()
+        update()
+        basic_gui()
 
-    end_time = time.time()
-    if enable_profile:
-        exec_time = end_time - start_time
+        end_time = time.clock()
+        if enable_profile:
+            profile.add({"main": end_time - start_time})
 
 
 def __init__():
