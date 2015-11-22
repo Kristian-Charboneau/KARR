@@ -51,6 +51,7 @@ def off():
     """
     return 0
 
+
 if hid_enable:
     bmap = {  # Button mapping. 'Function': corresponding method
         'X': hid.get_lx,  # X axis
@@ -216,7 +217,7 @@ def calc_thrust(x, y, z):
     """
     Calculates the values for each motor in a vectored thrust configuration.
     """
-    global hlf, hrf, hlb, hrb
+    global hlf, hrf, hlb, hrb, vlf, vrf, vlb, vrb
 
     LFx = x
     RFx = -x
@@ -272,6 +273,29 @@ def calc_thrust(x, y, z):
         else:
             hrb = int(hrb-(lim-values[3]))
 
+    # vertical thrusters ######################################################
+    vlf = bmap['Z']()
+    vrf = bmap['Z']()
+    vlb = bmap['Z']()
+    vrb = bmap['Z']()
+
+    if hid_enable:
+        vlf += hid.get_r2() - hid.get_l2()
+        if vlf > 100:
+            vlf = 100
+
+        if vlf < -100:
+            vlf = -100
+        vrf = vlf
+
+        vlb += -hid.get_r2() + hid.get_l2()
+        if vlb > 100:
+            vlb = 100
+
+        if vlb < -100:
+            vlb = -100
+        vrb = vlb
+
 
 def update():
     """
@@ -293,16 +317,10 @@ def update():
     #   - velocity, acceleration, rotation, heading
     global hlf, hlb, hrf, hrb, vlf, vlb, vrf, vrb
 
-    # horizontal thrusters ####################################################
     y_axis = bmap['Y']()  # Left joystick Y axis
     x_axis = bmap['X']()  # Left joystick X axis
     zr_axis = bmap['Zr']()  # Right joystick X axis
     calc_thrust(y_axis, x_axis, zr_axis)
-    # vertical thrusters ######################################################
-    vlf = bmap['Z']()
-    vrf = bmap['Z']()
-    vlb = bmap['Z']()
-    vrb = bmap['Z']()
 
     end_time = time.clock()
     if enable_profile:
