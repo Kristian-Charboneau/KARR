@@ -46,16 +46,19 @@ except:
 
 
 def off():
+    """
+    Used for the button map dictionary
+    """
     return 0
 
 if hid_enable:
-    bmap = {  # Button mapping. Function: corresponding method
-        'X': hid.get_lx,
-        'Y': hid.get_ly,
-        'Z': None,
-        'Xr': hid.get_ry,
-        'Yr': None,
-        'Zr': hid.get_rx,
+    bmap = {  # Button mapping. 'Function': corresponding method
+        'X': hid.get_lx,  # X axis
+        'Y': hid.get_ly,  # Y axis
+        'Z': hid.get_ry,  # Z axis
+        'Xr': None,  # X rotation axis
+        'Yr': None,  # Y rotation axis
+        'Zr': hid.get_rx,  # Z rotation axis
         'Light_up': hid.get_r1,  # increase brightness
         'Light_down': hid.get_l1,  # decrease brightness
         'Screen+': hid.get_start,  # cycle screens right
@@ -64,7 +67,9 @@ if hid_enable:
         'Select_right': hid.get_dpad_right,
         'Select_up': hid.get_dpad_up,
         'Select_down': hid.get_dpad_down,
-        'Enter': hid.get_x
+        'Enter': hid.get_x,
+        'Increase': None,  # increase selected setting
+        'Decrease': None,  # decrease selected setting
     }
 else:  # set each function to off
     bmap = {  # Button mapping. Function: corresponding method
@@ -82,7 +87,9 @@ else:  # set each function to off
         'Select_right': off,
         'Select_up': off,
         'Select_down': off,
-        'Enter': off
+        'Enter': off,
+        'Increase': None,  # increase selected setting
+        'Decrease': None,  # decrease selected setting
     }
 
 # ser = serial.Serial('/dev/', 250000)
@@ -109,6 +116,7 @@ RBV_trim = 0
 ###############################################################################
 velocity = [0, 0, 0]  # linear velocity on x, y, and z axis
 rotation = [0, 0, 0]  # rotational velocity around x, y, and z axis
+acceleration = [0, 0, 0]
 
 hlf = 0  # horizontal left front
 hlb = 0  # horizontal left back
@@ -188,57 +196,8 @@ def shutdown():
     print output
 
 
-###############################################################################
-# Not needed in the current version. Intended for when this file is loaded as a
-# module instead of used standalone. Allows the parent program to directly set
-# movement and rotation values.
-###############################################################################
-def move_x(value):
-    pass
-
-
-def move_y(value):
-    pass
-
-
-def move_z(value):
-    pass
-
-
-def rot_x(value):
-    pass
-
-
-def rot_y(value):
-    pass
-
-
-def rot_z(value):
-    pass
-
-
-def light(value):
-    pass
-
-
-def camera_pan(value):
-    """
-    Not used in the current version of KARR (kept for future use)
-    """
-    global pan
-    pan = value
-
-
-def camera_tilt(value):
-    """
-    Not used in the current version of KARR (kept for future use)
-    """
-    global tilt
-    tilt = value
-###############################################################################
-
-
 def velocity_toString():
+    global velocity
     string = "X: %s " % velocity[0]
     string += "Y: %s " % velocity[1]
     string += "Z: %s " % velocity[2]
@@ -246,9 +205,10 @@ def velocity_toString():
 
 
 def acceleration_toString():
-    string = "X: %s " % velocity[0]
-    string += "Y: %s " % velocity[1]
-    string += "Z: %s " % velocity[2]
+    global acceleration
+    string = ("X: %s " % acceleration[0])
+    string += "Y: %s " % acceleration[1]
+    string += "Z: %s " % acceleration[2]
     return(string)
 
 
@@ -287,26 +247,30 @@ def calc_thrust(x, y, z):
     values.sort()
 
     # adjust so that thrust is maximised
+    axis = [abs(x), abs(y), abs(z)]
+    axis.sort()
+    lim = axis[2]
+
     if (int(values[3]) is not 0):
         if hlf > 0:
-            hlf = int(hlf+100-values[3])
+            hlf = int(hlf+lim-values[3])
         else:
-            hlf = int(hlf-(100-values[3]))
+            hlf = int(hlf-(lim-values[3]))
 
         if hrf > 0:
-            hrf = int(hrf+100-values[3])
+            hrf = int(hrf+lim-values[3])
         else:
-            hrf = int(hrf-(100-values[3]))
+            hrf = int(hrf-(lim-values[3]))
 
         if hlb > 0:
-            hlb = int(hlb+100-values[3])
+            hlb = int(hlb+lim-values[3])
         else:
-            hlb = int(hlb-(100-values[3]))
+            hlb = int(hlb-(lim-values[3]))
 
         if hrb > 0:
-            hrb = int(hrb+100-values[3])
+            hrb = int(hrb+lim-values[3])
         else:
-            hrb = int(hrb-(100-values[3]))
+            hrb = int(hrb-(lim-values[3]))
 
 
 def update():
@@ -327,14 +291,18 @@ def update():
     #
     # get info from IMU
     #   - velocity, acceleration, rotation, heading
+    global hlf, hlb, hrf, hrb, vlf, vlb, vrf, vrb
 
     # horizontal thrusters ####################################################
     y_axis = bmap['Y']()  # Left joystick Y axis
     x_axis = bmap['X']()  # Left joystick X axis
     zr_axis = bmap['Zr']()  # Right joystick X axis
     calc_thrust(y_axis, x_axis, zr_axis)
-
-
+    # vertical thrusters ######################################################
+    vlf = bmap['Z']()
+    vrf = bmap['Z']()
+    vlb = bmap['Z']()
+    vrb = bmap['Z']()
 
     end_time = time.clock()
     if enable_profile:
@@ -346,7 +314,7 @@ def update():
 ###############################################################################
 def main_screen():
     """
-    Displays important system stats such as heading depth and brightness
+    Displays important system stats such as heading, depth, and brightness
     """
     screen = ("Depth = {}ft\nHeading = {}\nVelocity(ft/s) = {}\n"
               "Acceleration() = {}"

@@ -112,27 +112,32 @@ def calc(x, y, z):  # x, y, and z axis
     print(values)
 
     # adjust so that thrust is maximised
+    axis = [abs(x), abs(y), abs(z)]
+    axis.sort()
+    lim = axis[2]
+    # lim = 100
+
     if (int(values[3]) is not 0):
         print("adjusting!")
         if LF > 0:
-            LF = int(LF+100-values[3])
+            LF = int(LF+lim-values[3])
         else:
-            LF = int(LF-(100-values[3]))
+            LF = int(LF-(lim-values[3]))
 
         if RF > 0:
-            RF = int(RF+100-values[3])
+            RF = int(RF+lim-values[3])
         else:
-            RF = int(RF-(100-values[3]))
+            RF = int(RF-(lim-values[3]))
 
         if LB > 0:
-            LB = int(LB+100-values[3])
+            LB = int(LB+lim-values[3])
         else:
-            LB = int(LB-(100-values[3]))
+            LB = int(LB-(lim-values[3]))
 
         if RB > 0:
-            RB = int(RB+100-values[3])
+            RB = int(RB+lim-values[3])
         else:
-            RB = int(RB-(100-values[3]))
+            RB = int(RB-(lim-values[3]))
 
 if __name__ == '__main__':
     main()
