@@ -38,6 +38,7 @@ VAR
   
 OBJ
   serial        : "FullDuplexSerial"
+  servo         : "Servo32v7"
 
 PUB Main
 {{
