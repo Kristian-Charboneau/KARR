@@ -128,6 +128,12 @@ vlb = 0  # vertical left back
 vrf = 0  # vertical right front
 vrb = 0  # vertical right back
 
+motor_pins = {'hlf':1,
+              'hlb':motor_pins['hlf']+1,
+              'hrf':motor_pins['hlf']+1,
+              
+}
+
 brightness = 0  # Light brighteness. 0 = no light, 100 = full brightness
 pan = 0
 tilt = 0
