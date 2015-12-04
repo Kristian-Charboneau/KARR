@@ -41,9 +41,10 @@ CON
   _xinfreq = 5_000_000
   '5 MHz clock * 16x PLL = 80 MHz system clock speed
 
-  shutdown_pin =  ' the pin connected to the On/Off switch board
+  'shutdown_pin =  ' the pin connected to the On/Off switch board. Not necessary with current design.
   light_pin =  ' denotes the pin used for the led
   'motor control pins are less than light_pin
+  return_char = 33
 VAR
 
   'Globally accessible variables
@@ -53,7 +54,7 @@ VAR
   
 OBJ
   serial        : "Parallax Serial Terminal"
-  servo         : "PWM_32_v7"
+  servo         : "PWM_32_v4"
   bs2           : "BS2_Functions"
 
 PUB Main | pin, value, failed
@@ -73,31 +74,36 @@ PUB Main | pin, value, failed
 		pin := serial.rx
 		value := serial.rx
 		if serial.rx = '>'
-			serial.tx(32)  ' send a space character if the packet was recieved correclty
+			serial.char(return_char)  ' send a character if the packet was recieved correclty
 			if pin < light_pin 
 				servo.Servo(pin, convert(value))
+                                           serial.Char(return_char)
 			if pin == light_pin
 				servo.Duty(pin, value, 5000)
-			if pin == shutdown_pin
-				shutdown
+                                           serial.Char(return_char)
 		else
-			serial.tx('!')  ' send a "!" if the packet wasn't received correctly
+			serial.char(33)  ' send a "!" if the packet wasn't received correctly
 		
 
-PUB convert(value, min, max)
+PUB convert(value) | oldMin, oldMax, newMin, newMax
 {{
   converts a range (such as 0 to 200) to servo pwm values
  
   parameters:    value = the input value to convert
-                 min = minimum value in range
-                 max = maximum value in range
                  
   return:        new value
-
-  expected outcome of example usage call: Does nothing yet.
 }}
 
-  'Your code here
+  oldMin := 0
+  oldMax := 200
+  newMin := 1000
+  newMax := 1500
+  
+  oldRange := oldMax - oldMin
+  newRange := newMax - newMin
+  newValue := (((value - oldMin) * newRange) / oldRange) + newMin
+  
+  return newValue
 PUB shutdown
 	bs2.PAUSE(5000)
 	bs2.HIGH(shutdown_pin)

@@ -2,11 +2,18 @@
 # -*- coding: utf-8 -*-
 """Module for managing data packets. Useful for sending data to a
 microcontroller over a serial connection. This module adds control characters
-and a checksum to a list of integers. It returns the new list.
+and to a pin and value pair. It returns .
 
-Packet structure: Each packet consists of a start and end char, data
-ints, and a checksum int. For example:
-Start,Data1,Data2,Data3,Checksum,End
+Packet structure: Each packet consists of a start and end char, pin
+byte, and a value byte. For example:
+
+Start pin value End
+
+The start and end chars are '<' and '>'.
+A possible packet could look like this (decimal representation):
+
+60 2 100 62
+
 
 @author:Kristian Charboneau
 """
@@ -14,61 +21,54 @@ Start,Data1,Data2,Data3,Checksum,End
 
 class Packet:
     """
+    Packet operations for communication with a microcontroller.
     """
     def __init__(self):
         pass
 
-    def to_packet(self, values):
+    def to_packet(self, pin, value):
         """
-        Adds control chars and checksum int to a list of ints
+        Adds control chars to pin and value
+        Returns a string.
         """
-        checksum = 0
-        for i in values:  # calculate checksum
-            checksum = checksum ^ i
-        values.insert(0, '<')
-        values.append(checksum)
-        values.append('>')
+        packet = ""
+        packet += "<"
+        packet += chr(pin)
+        packet += chr(value)
+        packet += ">"
 
-        return(values)
+        return(packet)
 
-    def to_list(self, values):
+    def to_values(self, packet):
         """
-        Strips the control characters and checksum from a list of intergers.
+        Strips the control characters from a packet.
+        Returns the pin and value integers
         """
-        values.remove('>')
-        values.remove('<')
-        values.pop()
-        return values
+        pin = packet[1]
+        value = packet[2]
+        return pin, value
 
     def validate(self, values):
         """
-        Validates a packetized string. Returns 1 for success and 0 for failure.
+        Validates a packetized string. Not applicable for this implementation
         """
-        values.remove('>')
-        values.remove('<')
-        packet_checksum = values.pop()
-
-        checksum = 0
-        for i in values:  # calculate checksum
-            checksum = checksum ^ i
-
-        if checksum == packet_checksum:
-            return True
-        else:
-            return False
+        pass
 
     def gen_checksum(self, packet):
         """
         Generate a checksum of a packet. The method used is a simple XOR
-        method.
+        method. Not applicable to current implementation.
         """
-        checksum = 0
-        for i in packet:  # calculate checksum
-            checksum = checksum ^ i
-        return checksum
+        pass
 
 if __name__ == '__main__':
     p = Packet()
-    l = [1, 2, 0, 65, 66, 254]
+    pin = 2
+    value = 100
 
-    print("Packet:%s" % p.to_packet(l))
+    # bytes = str.encode(p.to_packet(pin, value))
+    print()
+    print("Here are the bytes in the packet:")
+    for c in p.to_packet(pin, value):
+        print(ord(c))
+    # print("Packet:{}".format(p.to_packet(pin, value)))

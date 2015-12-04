@@ -71,6 +71,7 @@ if hid_enable:
         'Enter': hid.get_x,
         'Increase': None,  # increase selected setting
         'Decrease': None,  # decrease selected setting
+        'Back': hid.get_back
     }
 else:  # set each function to off
     bmap = {  # Button mapping. Function: corresponding method
@@ -101,7 +102,8 @@ save_data = []
 # LBV_trim, RBV_trim, brightness]
 
 ###############################################################################
-# variables to store settings
+# variables to store trim settings, modify these if the rov is veering off
+# course during operation.
 ###############################################################################
 LF_trim = 0
 RF_trim = 0
@@ -128,11 +130,17 @@ vlb = 0  # vertical left back
 vrf = 0  # vertical right front
 vrb = 0  # vertical right back
 
-motor_pins = {'hlf':1,
-              'hlb':motor_pins['hlf']+1,
-              'hrf':motor_pins['hlf']+1,
-              
-}
+# dictionary to store data for the motors. The value field is a list. The list
+# structure is [i/o pin, value, trim]
+motors = {"hlf": [hlf, 0, LF_trim],
+          "hlb": [hlb, 0, LB_trim],
+          "hrf": [hrf, 0, RF_trim],
+          "hrb": [hrb, 0, RB_trim],
+          "vlf": [vlf, 0, LFV_trim],
+          "vlb": [vlb, 0, LBV_trim],
+          "vrf": [vrf, 0, RFV_trim],
+          "vrb": [vrb, 0, RBV_trim],
+          }
 
 brightness = 0  # Light brighteness. 0 = no light, 100 = full brightness
 pan = 0
@@ -143,34 +151,9 @@ heading = ""
 
 def startup():
     """
-    - load settings from file
     - establish communication with Propeller Chip
     """
     start_time = time.clock()
-
-###############################################################################
-# load settings from file
-###############################################################################
-    global save_data
-    global LF_trim, RF_trim, LB_trim, RB_trim, LFV_trim, RFV_trim, LBV_trim
-    global RBV_trim, brightness
-
-    try:
-        fileObject = open(save_file, 'r')
-    except:  # use default values if no save file found
-        pass
-    else:  # load values from savefile
-        save_data = pickle.load(fileObject)
-        LF_trim = save_data[0]
-        RF_trim = save_data[1]
-        LB_trim = save_data[2]
-        RB_trim = save_data[3]
-        LFV_trim = save_data[4]
-        RFV_trim = save_data[5]
-        LBV_trim = save_data[6]
-        RBV_trim = save_data[7]
-        brightness = save_data[8]
-###############################################################################
 
     # check for communication with rov
     try:
@@ -195,12 +178,13 @@ def shutdown():
     """
     fileObject = open(save_file, 'wb')
     pickle.dump(save_data, fileObject)
+    # sys.exit()
 
-    command = "/usr/bin/sudo /sbin/shutdown -r now"
-    import subprocess
-    process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
-    output = process.communicate()[0]
-    print output
+    # command = "/usr/bin/sudo /sbin/shutdown -r now"
+    # import subprocess
+    # process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+    # output = process.communicate()[0]
+    # print output
 
 
 def velocity_toString():
@@ -224,6 +208,7 @@ def calc_thrust(x, y, z):
     Calculates the values for each motor in a vectored thrust configuration.
     """
     global hlf, hrf, hlb, hrb, vlf, vrf, vlb, vrb
+    global motors
 
     LFx = x
     RFx = -x
@@ -240,17 +225,18 @@ def calc_thrust(x, y, z):
     LBz = -z
     RBz = z
 
-    hlf = (LFx+LFy)/2
-    hrf = -(RFx+RFy)/2
-    hlb = -(LBx+LBy)/2
-    hrb = (RBx+RBy)/2
+    motors["hlf"][1] = (LFx+LFy)/2
+    motors["hrf"][1] = -(RFx+RFy)/2
+    motors["hlb"][1] = -(LBx+LBy)/2
+    motors["hrb"][1] = (RBx+RBy)/2
 
-    hlf = (hlf+LFz)/2
-    hrf = (hrf+RFz)/2
-    hlb = (hlb+LBz)/2
-    hrb = (hrb+RBz)/2
+    motors["hlf"][1] = (motors["hlf"][1]+LFz)/2
+    motors["hrf"][1] = (motors["hrf"][1]+RFz)/2
+    motors["hlb"][1] = (motors["hlb"][1]+LBz)/2
+    motors["hrb"][1] = (motors["hrb"][1]+RBz)/2
 
-    values = [abs(hlf), abs(hrf), abs(hlb), abs(hrb)]
+    values = [abs(motors["hlf"][1]), abs(motors["hrf"][1]),
+              abs(motors["hlb"][1]), abs(hrb)]
     values.sort()
 
     # adjust so that thrust is maximised
@@ -259,48 +245,48 @@ def calc_thrust(x, y, z):
     lim = axis[2]
 
     if (int(values[3]) is not 0):
-        if hlf > 0:
-            hlf = int(hlf+lim-values[3])
+        if motors["hlf"][1] > 0:
+            motors["hlf"][1] = int(motors["hlf"][1]+lim-values[3])
         else:
-            hlf = int(hlf-(lim-values[3]))
+            motors["hlf"][1] = int(motors["hlf"][1]-(lim-values[3]))
 
-        if hrf > 0:
-            hrf = int(hrf+lim-values[3])
+        if motors["hrf"][1] > 0:
+            motors["hrf"][1] = int(motors["hrf"][1]+lim-values[3])
         else:
-            hrf = int(hrf-(lim-values[3]))
+            motors["hrf"][1] = int(motors["hrf"][1]-(lim-values[3]))
 
-        if hlb > 0:
-            hlb = int(hlb+lim-values[3])
+        if motors["hlb"][1] > 0:
+            motors["hlb"][1] = int(motors["hlb"][1]+lim-values[3])
         else:
-            hlb = int(hlb-(lim-values[3]))
+            motors["hlb"][1] = int(motors["hlb"][1]-(lim-values[3]))
 
-        if hrb > 0:
-            hrb = int(hrb+lim-values[3])
+        if motors["hrb"][1] > 0:
+            motors["hrb"][1] = int(motors["hrb"][1]+lim-values[3])
         else:
-            hrb = int(hrb-(lim-values[3]))
+            motors["hrb"][1] = int(motors["hrb"][1]-(lim-values[3]))
 
     # vertical thrusters ######################################################
-    vlf = bmap['Z']()
-    vrf = bmap['Z']()
-    vlb = bmap['Z']()
-    vrb = bmap['Z']()
+    motors["vlf"][1] = bmap['Z']()
+    motors["vrf"][1] = bmap['Z']()
+    motors["vlb"][1] = bmap['Z']()
+    motors["vrb"][1] = bmap['Z']()
 
     if hid_enable:
-        vlf += hid.get_r2() - hid.get_l2()
-        if vlf > 100:
-            vlf = 100
+        motors["vlf"][1] += hid.get_r2() - hid.get_l2()
+        if motors["vlf"][1] > 100:
+            motors["vlf"][1] = 100
 
-        if vlf < -100:
-            vlf = -100
-        vrf = vlf
+        if motors["vlf"][1] < -100:
+            motors["vlf"][1] = -100
+        motors["vrf"][1] = motors["vlf"][1]
 
-        vlb += -hid.get_r2() + hid.get_l2()
-        if vlb > 100:
-            vlb = 100
+        motors["vlb"][1] += -hid.get_r2() + hid.get_l2()
+        if motors["vlb"][1] > 100:
+            motors["vlb"][1] = 100
 
-        if vlb < -100:
-            vlb = -100
-        vrb = vlb
+        if motors["vlb"][1] < -100:
+            motors["vlb"][1] = -100
+        motors["vrb"][1] = motors["vlb"][1]
 
 
 def update():
@@ -374,11 +360,18 @@ def status_screen():
     Shows the status of system variable not present on the main screen. Useful
     for debugging purposes.
     """
-    global hlf, hlb, hrf, hrb, vlf, vlb, vrf, vrb
+    global motors
+    hlf = motors["hlf"][1]
+    hlb = motors["hlb"][1]
+    hrf = motors["hrf"][1]
+    hrb = motors["hrb"][1]
+    vlf = motors["vlf"][1]
+    vlb = motors["vlb"][1]
+    vrf = motors["vrf"][1]
+    vrb = motors["vrb"][1]
     screen = "System Status:\n"
-    screen += "h:{} {}\n  {} {}\nv:{} {}\n  {} {}\n".format(hlf, hrf, hlb,
-                                                            hrb, vlf, vrf,
-                                                            vlb, vrb)
+    screen += "h:{} {}\n  {} {}\nv:{} {}\n  {} {}\n".format(hlf, hrf, hlb, hrb,
+                                                            vlf, vrf, vlb, vrb)
     return screen
 
 ###############################################################################
@@ -454,6 +447,9 @@ def main():
         end_time = time.clock()
         if enable_profile:
             profile.add({"main": end_time - start_time})
+
+        if bmap["Back"]() == 1:
+            shutdown()
 
 
 def __init__():
