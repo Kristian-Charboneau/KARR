@@ -224,3 +224,183 @@ class Gamepad:
         self.update()
         # for some reason the left y axis is inverted
         return(-1*self.convert(self.gp.get_axis(button_map['LeftY'])))
+
+
+class Keyboard:
+    """
+    Uses the keyboard for input. Useful as a backup incase a gamepad isn't
+    present. Provides a get_key() method for returning the keypress. Also
+    provides the same methods as the gamepad class so it can act as a drop in
+    replacement.
+    """
+    def init():
+        pass
+
+    def get_key():
+        pass
+
+    def update(self):
+        """
+        force pygame to read input from the gamepad
+        """
+        pygame.event.pump()
+        global 
+        pressed = pygame.key.get_pressed()
+
+    def get_x(self):
+        """
+        return value of X button
+        """
+        self.update()
+        # pygame.event.pump()
+        return(self.gp.get_button(button_map['X']))
+
+    def get_y(self):
+        """
+        return value of Y button
+        """
+        self.update()
+        return(self.gp.get_button(button_map['Y']))
+
+    def get_a(self):
+        """
+        return value of A button
+        """
+        self.update()
+        return(self.gp.get_button(button_map['A']))
+
+    def get_b(self):
+        """
+        return value of B button
+        """
+        self.update()
+        return(self.gp.get_button(button_map['B']))
+
+    def get_dpad_up(self):
+        """
+        return value of Dpad up button
+        """
+        self.update()
+        value = self.gp.get_hat(0)
+        if value[1] == 0 or -1:
+            return(0)
+        else:
+            return(1)
+
+    def get_dpad_down(self):
+        """
+        return value of Dpad up button
+        """
+        self.update()
+        value = self.gp.get_hat(0)
+        if value[1] == 0 or 1:
+            return(0)
+        else:
+            return(1)
+
+    def get_dpad_left(self):
+        """
+        return value of Dpad up button
+        """
+        self.update()
+        value = self.gp.get_hat(0)
+        if value[0] == 0 or 1:
+            return(0)
+        else:
+            return(1)
+
+    def get_dpad_right(self):
+        """
+        return value of Dpad up button
+        """
+        self.update()
+        value = self.gp.get_hat(0)
+        if value[0] == 0 or -1:
+            return(0)
+        else:
+            return(1)
+
+    def get_start(self):
+        """
+        return value of Start button
+        """
+        self.update()
+        return(self.gp.get_button(button_map['Start']))
+
+    def get_back(self):
+        """
+        return value of Back button
+        """
+        self.update()
+        return(self.gp.get_button(button_map['Back']))
+
+    def get_r1(self):
+        """
+        return value of R1 button
+        """
+        self.update()
+        return(self.gp.get_button(button_map['R1']))
+
+    def get_l1(self):
+        """
+        return value of L1 button
+        """
+        self.update()
+        return(self.gp.get_button(button_map['L1']))
+
+    def get_r2(self):
+        """
+        return value of R2 button
+        """
+        self.update()
+        return(self.gp.get_button(button_map['R2']))
+
+    def get_l2(self):
+        """
+        return value of L2 button
+        """
+        self.update()
+        return(self.gp.get_button(button_map['L2']))
+
+    def get_r3(self):
+        """
+        return value of R3 button
+        """
+        self.update()
+        return(self.gp.get_button(button_map['R3']))
+
+    def get_l3(self):
+        """
+        return value of L3 button
+        """
+        self.update()
+        return(self.gp.get_button(button_map['L3']))
+
+    def get_rx(self):
+        """
+        return value of Right X axis
+        """
+        self.update()
+        return(self.convert(self.gp.get_axis(button_map['RightX'])))
+
+    def get_ry(self):
+        """
+        return value of Right Y axis
+        """
+        self.update()
+        return(self.convert(self.gp.get_axis(button_map['RightY'])))
+
+    def get_lx(self):
+        """
+        return value of Left X axis
+        """
+        self.update()
+        return(self.convert(self.gp.get_axis(button_map['LeftX'])))
+
+    def get_ly(self):
+        """
+        return value of Left Y axis
+        """
+        self.update()
+        # for some reason the left y axis is inverted
+        return(-1*self.convert(self.gp.get_axis(button_map['LeftY'])))

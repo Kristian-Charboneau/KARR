@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/python
 """Main application for KARR. Provide's a basic "gui" using the terminal.
 @author:Kristian Charboneau
 
