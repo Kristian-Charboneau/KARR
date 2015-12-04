@@ -44,7 +44,7 @@ CON
   'shutdown_pin =  ' the pin connected to the On/Off switch board. Not necessary with current design.
   light_pin =  ' denotes the pin used for the led
   'motor control pins are less than light_pin
-  return_char = 33
+  return_char = 35  ' #
 VAR
 
   'Globally accessible variables

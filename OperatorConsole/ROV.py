@@ -16,10 +16,13 @@ import time
 import sys
 from datetime import date
 
+from Adafruit_BNO055 import BNO055
+
 from Packet import Packet
 import HID
 import profiler
 import error_handler
+
 
 profile = profiler.profiler()
 enable_profile = True  # set to True to enable profiling feaures
@@ -94,12 +97,6 @@ else:  # set each function to off
         'Decrease': None,  # decrease selected setting
     }
 
-# ser = serial.Serial('/dev/', 250000)
-
-save_file = "settings.obj"
-save_data = []
-# save_data structure: [LF_trim, RF_trim, LB_trim, RB_trim, LFV_trim, RFV_trim,
-# LBV_trim, RBV_trim, brightness]
 
 ###############################################################################
 # variables to store trim settings, modify these if the rov is veering off
@@ -148,21 +145,65 @@ tilt = 0
 depth = 0
 heading = ""
 
+prop_port = '/dev/'  # serial port the propeller is connected to
+
+# serial port the Fusion 9 DOF orientation sensor is  connected to.
+fusion_port = '/dev/'
+
+prop_connected = False
+fusion_connected = False
+ser = object
+fusion = object
+
+
+def connect_prop():
+    """
+    Try to establish communication with the propeller chip.
+    """
+    global ser, prop_port
+    try:
+        ser = serial.Serial(prop_port, 250000, timeout=0)
+        # ser.setPort("")
+        pass
+    except:
+        print("ERROR: Can't connect to serial port.")
+        return False
+    else:
+        ser.write("<AA>")
+        if ser.read() == '#':
+            return True
+        else:
+            return False
+
+
+def connect_fusion():
+    """
+    Try to establish communication with the fusion orientation sensor.
+    """
+    global fusion_port, fusion
+    try:
+        fusion = BNO055.BNO055(serial_port=fusion_port, serial_timeout_sec=0)
+        fusion.begin()
+    except:
+        print("ERROR: Can't connect to fusion sensor.")
+        return False
+
 
 def startup():
     """
     - establish communication with Propeller Chip
     """
     start_time = time.clock()
+    global prop_connected, fusion_connected
 
     # check for communication with rov
-    try:
-        # ser.setPort("")
-        pass
-    except:
+    prop_connected = connect_prop()
+    fusion_connected = connect_fusion()
+
+    if not prop_connected:
         errors.add("ERROR: Can't connect to serial port.")
-        print("ERROR: Can't connect to serial port.")
-        time.sleep(1)
+    if not fusion_connected:
+        errors.add("ERROR: Can't connect to fusion sensor.")
 
     end_time = time.clock()
     if enable_profile:
@@ -176,9 +217,7 @@ def shutdown():
     - tell Propeller Chip to start shutdown sequence
     - Tell system to shutdown
     """
-    fileObject = open(save_file, 'wb')
-    pickle.dump(save_data, fileObject)
-    # sys.exit()
+    sys.exit()
 
     # command = "/usr/bin/sudo /sbin/shutdown -r now"
     # import subprocess
@@ -236,7 +275,7 @@ def calc_thrust(x, y, z):
     motors["hrb"][1] = (motors["hrb"][1]+RBz)/2
 
     values = [abs(motors["hlf"][1]), abs(motors["hrf"][1]),
-              abs(motors["hlb"][1]), abs(hrb)]
+              abs(motors["hlb"][1]), abs(motors["hrb"][1])]
     values.sort()
 
     # adjust so that thrust is maximised
@@ -265,6 +304,12 @@ def calc_thrust(x, y, z):
         else:
             motors["hrb"][1] = int(motors["hrb"][1]-(lim-values[3]))
 
+        # add trim
+        motors["hlf"][1] += motors["hlf"][2]
+        motors["hrf"][1] += motors["hlf"][2]
+        motors["hlb"][1] += motors["hlf"][2]
+        motors["hrb"][1] += motors["hlf"][2]
+
     # vertical thrusters ######################################################
     motors["vlf"][1] = bmap['Z']()
     motors["vrf"][1] = bmap['Z']()
@@ -287,6 +332,11 @@ def calc_thrust(x, y, z):
         if motors["vlb"][1] < -100:
             motors["vlb"][1] = -100
         motors["vrb"][1] = motors["vlb"][1]
+    # add trim
+    motors["vlf"][1] += motors["vlf"][2]
+    motors["vrf"][1] += motors["vlf"][2]
+    motors["vlb"][1] += motors["vlf"][2]
+    motors["vrb"][1] += motors["vlf"][2]
 
 
 def update():
@@ -307,7 +357,17 @@ def update():
     #
     # get info from IMU
     #   - velocity, acceleration, rotation, heading
-    global hlf, hlb, hrf, hrb, vlf, vlb, vrf, vrb
+    global hlf, hlb, hrf, hrb, vlf, vlb, vrf, vrb, prop_connected
+    global fusion_connected, motors, ser, prop_connected
+
+    if not prop_connected:
+        prop_connected = connect_prop()
+    else:
+        for i in motors:
+            ser.write(Packet.to_packet(i[0], i[1]))
+
+    if not fusion_connected:
+        fusion_connected = connect_fusion()
 
     y_axis = bmap['Y']()  # Left joystick Y axis
     x_axis = bmap['X']()  # Left joystick X axis
@@ -326,18 +386,18 @@ def main_screen():
     """
     Displays important system stats such as heading, depth, and brightness
     """
-    screen = ("Depth = {}ft\nHeading = {}\nVelocity(ft/s) = {}\n"
-              "Acceleration() = {}"
-              "\nBrighteness = {}".format(depth, heading,
-                                          velocity_toString(),
-                                          acceleration_toString(),
-                                          brightness))
+
+    heading, roll, pitch = fusion.read_euler()
+    screen = ('Heading={0:0.2F} Roll={1:0.2F} Pitch={2:0.2F}\tSys_cal={3} Gyro_cal={4} Accel_cal={5} Mag_cal={6}'.format(
+          heading, roll, pitch, sys, gyro, accel, mag))
+    # screen = ("Depth = {}ft\nHeading = {}\nVelocity(ft/s) = {}\n"
+    #           "Acceleration() = {}"
+    #           "\nBrighteness = {}".format(depth, heading,
+    #                                       velocity_toString(),
+    #                                       acceleration_toString(),
+    #                                       brightness))
     return(screen)
 
-
-def screen2():
-    screen = "Screen 2"
-    return(screen)
 
 
 def error_screen():
@@ -380,7 +440,7 @@ def status_screen():
 # If more complex functionality is needed this may change to a dictionary, or
 # nested list.
 ###############################################################################
-screens = [main_screen, screen2, error_screen, profile_screen, status_screen]
+screens = [main_screen, error_screen, profile_screen, status_screen]
 screen_index = 0
 current = 0
 previous = 0
