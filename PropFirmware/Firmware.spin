@@ -20,7 +20,19 @@ N/A
 Components:
 N/A
 
-=============================================                  
+=============================================
+setMotors()  # could be run in its own cog
+getData()
+
+cog0 = get serial data from pc
+cog1 = serial driver
+cog2 = pwm driver
+cog3
+cog4
+cog5
+cog6
+cog7
+
 }}
 CON
 
@@ -29,100 +41,64 @@ CON
   _xinfreq = 5_000_000
   '5 MHz clock * 16x PLL = 80 MHz system clock speed
 
+  shutdown_pin =  ' the pin connected to the On/Off switch board
+  light_pin =  ' denotes the pin used for the led
+  'motor control pins are less than light_pin
 VAR
 
   'Globally accessible variables
-  long  cogStack[100]
-  long  routine1_cog, routine2_cog  
+  long  setMototrStack[100]
+  byte  m1, m2, m3, m4, m5, m6, m7, m8, m9
 
   
 OBJ
-  serial        : "FullDuplexSerial"
-  servo         : "Servo32v7"
+  serial        : "Parallax Serial Terminal"
+  servo         : "PWM_32_v7"
+  bs2           : "BS2_Functions"
 
-PUB Main
+PUB Main | pin, value, failed
 {{
-  First public method in the top .spin file starts execution, runs in cog 0
-  
-  parameters:    none
-  return:        none
-  
-  example usage: N/A - executes on startup
-  
-  Starts two cogs running in parallel with separate routines, then
-  repeats forever.
+  Init drivers, get data from host and set outputs.
+  variables:
+    pin: I/O pin to set. The max I/O pin value is 27, this leaves 28-255 for other "modes" or control codes that can be used
+    value: what value the I/O pin should be set to
+    failed: Incremented if a packet wasn't received correctly
 }}
+  serial.start(256000)
+  servo.start
+  bs2.start
 
-  'your code here
-
-  'Start parallel routines
-  routine1_cog := cognew(Parallel_Routine_1(6, 365, -1), @cogStack[0]) + 1
-  routine2_cog := cognew(Parallel_Routine_2, @cogStack[50]) + 1
-
-
-  'main loop - repeats forever
   repeat
+	if serial.rx = '<'
+		pin := serial.rx
+		value := serial.rx
+		if serial.rx = '>'
+			serial.tx(32)  ' send a space character if the packet was recieved correclty
+			if pin < light_pin 
+				servo.Servo(pin, convert(value))
+			if pin == light_pin
+				servo.Duty(pin, value, 5000)
+			if pin == shutdown_pin
+				shutdown
+		else
+			serial.tx('!')  ' send a "!" if the packet wasn't received correctly
+		
 
-PUB Parallel_Routine_1(param_var1, param_var2, param_var_etc) | local_var1, local_var2, local_var_etc
+PUB convert(value, min, max)
 {{
-  Does nothing yet. Add Spin statements to define the operation of this
-  public method.  Meant to run independently in its own cog.
+  converts a range (such as 0 to 200) to servo pwm values
  
-  parameters:    param_var1    = first parameter passed into Parallel_Routine_1
-                 param_var2    = second parameter passed into Parallel_Routine_1
-                 param_var_etc = third parameter passed into Parallel_Routine_1
+  parameters:    value = the input value to convert
+                 min = minimum value in range
+                 max = maximum value in range
                  
-  return:        none
-
-  example usage: cognew(Parallel_Routine_1(42, 89, 314), @cogStack[0]) + 1
+  return:        new value
 
   expected outcome of example usage call: Does nothing yet.
 }}
 
   'Your code here
+PUB shutdown
+	bs2.PAUSE(5000)
+	bs2.HIGH(shutdown_pin)
 
-
-PUB Parallel_Routine_2 | local_var1, local_var2, local_var_etc
-{{
-  Does nothing yet. Add Spin statements to define the operation of this
-  public method.  Meant to run independently in its own cog.
- 
-  parameters:    none
-  return:        none
-
-  example usage: cognew(Parallel_Routine_2, @cogStack[50]) + 1
-
-  expected outcome of example usage call: Does nothing yet.
-}}
-
-  'Your code here
-
-PRI Private_Method_1 : return_result | local_var1, local_var2, local_var_etc
-{{
-  Does nothing yet. Add Spin statements to define the operation of this
-  private method.
- 
-  parameters:    none
-  return:        0 - alias is "return_result"
-
-  example usage: Private_Method_1
-
-  expected outcome of example usage call: Does nothing yet.
-}}
-
-  'Your code here
-  
-PUB Public_Method_1 : return_result | local_var1, local_var2, local_var_etc
-{{
-  Does nothing yet. Add Spin statements to define the operation of this
-  public method.
- 
-  parameters:    none
-  return:        0 - alias is "return_result"
-
-  example usage: Public_Method_1
-
-  expected outcome of example usage call: Does nothing yet.
-}}
-
-  'Your code here
