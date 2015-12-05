@@ -386,9 +386,10 @@ def main_screen():
     """
     Displays important system stats such as heading, depth, and brightness
     """
-
-    heading, roll, pitch = fusion.read_euler()
-    screen = ('Heading={0:0.2F} Roll={1:0.2F} Pitch={2:0.2F}\tSys_cal={3} Gyro_cal={4} Accel_cal={5} Mag_cal={6}'.format(
+    screen = ""
+    if fusion_connected:
+        heading, roll, pitch = fusion.read_euler()
+        screen = ('Heading={0:0.2F} Roll={1:0.2F} Pitch={2:0.2F}\tSys_cal={3} Gyro_cal={4} Accel_cal={5} Mag_cal={6}'.format(
           heading, roll, pitch, sys, gyro, accel, mag))
     # screen = ("Depth = {}ft\nHeading = {}\nVelocity(ft/s) = {}\n"
     #           "Acceleration() = {}"
