@@ -95,6 +95,7 @@ else:  # set each function to off
         'Enter': off,
         'Increase': None,  # increase selected setting
         'Decrease': None,  # decrease selected setting
+        'Back': off
     }
 
 
@@ -166,7 +167,6 @@ def connect_prop():
         # ser.setPort("")
         pass
     except:
-        print("ERROR: Can't connect to serial port.")
         return False
     else:
         ser.write("<AA>")
@@ -185,7 +185,6 @@ def connect_fusion():
         fusion = BNO055.BNO055(serial_port=fusion_port, serial_timeout_sec=0)
         fusion.begin()
     except:
-        print("ERROR: Can't connect to fusion sensor.")
         return False
 
 
@@ -391,6 +390,8 @@ def main_screen():
         heading, roll, pitch = fusion.read_euler()
         screen = ('Heading={0:0.2F} Roll={1:0.2F} Pitch={2:0.2F}\tSys_cal={3} Gyro_cal={4} Accel_cal={5} Mag_cal={6}'.format(
           heading, roll, pitch, sys, gyro, accel, mag))
+    else:
+        screen = ('No orientation sensor detected')
     # screen = ("Depth = {}ft\nHeading = {}\nVelocity(ft/s) = {}\n"
     #           "Acceleration() = {}"
     #           "\nBrighteness = {}".format(depth, heading,
@@ -398,7 +399,6 @@ def main_screen():
     #                                       acceleration_toString(),
     #                                       brightness))
     return(screen)
-
 
 
 def error_screen():
