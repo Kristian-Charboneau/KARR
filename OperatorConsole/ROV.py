@@ -23,7 +23,7 @@ import HID
 import profiler
 import error_handler
 
-
+com = Packet()
 profile = profiler.profiler()
 enable_profile = True  # set to True to enable profiling feaures
 errors = error_handler.error_handler()  # used to store error messages
@@ -146,7 +146,8 @@ tilt = 0
 depth = 0
 heading = ""
 
-prop_port = '/dev/'  # serial port the propeller is connected to
+# serial port the propeller is connected to
+prop_port = '/dev/tty.usbserial-A10405UQ'
 
 # serial port the Fusion 9 DOF orientation sensor is  connected to.
 fusion_port = '/dev/'
@@ -163,17 +164,18 @@ def connect_prop():
     """
     global ser, prop_port
     try:
-        ser = serial.Serial(prop_port, 250000, timeout=0)
+        ser = serial.Serial(prop_port, 115200, timeout=0)
         # ser.setPort("")
-        pass
+        # pass
     except:
         return False
     else:
-        ser.write("<AA>")
-        if ser.read() == '#':
-            return True
-        else:
-            return False
+        ser.write(b"<AA>")
+        # if ser.read() == '#':
+        #     return True
+        # else:
+        #     return False
+        return True
 
 
 def connect_fusion():
@@ -186,6 +188,8 @@ def connect_fusion():
         fusion.begin()
     except:
         return False
+    else:
+        return True
 
 
 def startup():
@@ -305,9 +309,9 @@ def calc_thrust(x, y, z):
 
         # add trim
         motors["hlf"][1] += motors["hlf"][2]
-        motors["hrf"][1] += motors["hlf"][2]
-        motors["hlb"][1] += motors["hlf"][2]
-        motors["hrb"][1] += motors["hlf"][2]
+        motors["hrf"][1] += motors["hrf"][2]
+        motors["hlb"][1] += motors["hlb"][2]
+        motors["hrb"][1] += motors["hrb"][2]
 
     # vertical thrusters ######################################################
     motors["vlf"][1] = bmap['Z']()
@@ -316,7 +320,13 @@ def calc_thrust(x, y, z):
     motors["vrb"][1] = bmap['Z']()
 
     if hid_enable:
-        motors["vlf"][1] += hid.get_r2() - hid.get_l2()
+        value = 0  #
+        if hid.get_l2() > 0:
+            value = 100
+        if hid.get_r2() > 0:
+            value = -100
+
+        motors["vlf"][1] += hid.get_r2() - value
         if motors["vlf"][1] > 100:
             motors["vlf"][1] = 100
 
@@ -324,7 +334,7 @@ def calc_thrust(x, y, z):
             motors["vlf"][1] = -100
         motors["vrf"][1] = motors["vlf"][1]
 
-        motors["vlb"][1] += -hid.get_r2() + hid.get_l2()
+        motors["vlb"][1] += -hid.get_r2() + value
         if motors["vlb"][1] > 100:
             motors["vlb"][1] = 100
 
@@ -363,7 +373,7 @@ def update():
         prop_connected = connect_prop()
     else:
         for i in motors:
-            ser.write(Packet.to_packet(i[0], i[1]))
+            ser.write(com.to_packet(i[0], i[1]))
 
     if not fusion_connected:
         fusion_connected = connect_fusion()
@@ -389,7 +399,7 @@ def main_screen():
     if fusion_connected:
         heading, roll, pitch = fusion.read_euler()
         screen = ('Heading={0:0.2F} Roll={1:0.2F} Pitch={2:0.2F}\tSys_cal={3} Gyro_cal={4} Accel_cal={5} Mag_cal={6}'.format(
-          heading, roll, pitch, sys, gyro, accel, mag))
+                heading, roll, pitch, sys, gyro, accel, mag))
     else:
         screen = ('No orientation sensor detected')
     # screen = ("Depth = {}ft\nHeading = {}\nVelocity(ft/s) = {}\n"

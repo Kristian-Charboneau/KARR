@@ -33,8 +33,8 @@ class Packet:
         """
         packet = ""
         packet += "<"
-        packet += chr(pin)
-        packet += chr(value)
+        packet += str(pin)
+        packet += str(value)
         packet += ">"
 
         return(packet)

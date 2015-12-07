@@ -41,10 +41,13 @@ CON
   _xinfreq = 5_000_000
   '5 MHz clock * 16x PLL = 80 MHz system clock speed
 
-  'shutdown_pin =  ' the pin connected to the On/Off switch board. Not necessary with current design.
-  light_pin =  ' denotes the pin used for the led
+  base_pin = 0  'the pin for the first motor
+  shutdown_pin = 22 ' the pin connected to the On/Off switch board. Not necessary with current design.
+  light_pin =  8' denotes the pin used for the led
   'motor control pins are less than light_pin
   return_char = 35  ' #
+  
+  do_POST = 1  ' 1 = do POST routine, 0 = skip POST
 VAR
 
   'Globally accessible variables
@@ -65,15 +68,16 @@ PUB Main | pin, value, failed
     value: what value the I/O pin should be set to
     failed: Incremented if a packet wasn't received correctly
 }}
-  serial.start(256000)
+  serial.start(115_200)
   servo.start
-  bs2.start
-
+  bs2.start(20,21)
+  'POST
+  'serial.Str(String("Hello World"))
   repeat
-	if serial.rx = '<'
-		pin := serial.rx
-		value := serial.rx
-		if serial.rx = '>'
+	if serial.CharIn == 60 '<'
+		pin := serial.CharIn
+		value := serial.CharIn
+		if serial.CharIn == 62 '>'
 			serial.char(return_char)  ' send a character if the packet was recieved correclty
 			if pin < light_pin 
 				servo.Servo(pin, convert(value))
@@ -81,11 +85,13 @@ PUB Main | pin, value, failed
 			if pin == light_pin
 				servo.Duty(pin, value, 5000)
                                            serial.Char(return_char)
-		else
-			serial.char(33)  ' send a "!" if the packet wasn't received correctly
+                else
+	          serial.char(33)  ' send a "!" if the packet wasn't received correctly
+	else
+	   serial.char(33)  ' send a "!" if the packet wasn't received correctly
 		
 
-PUB convert(value) | oldMin, oldMax, newMin, newMax
+PUB convert(value) | oldMin, oldMax, newMin, newMax, oldRange, newRange, newValue
 {{
   converts a range (such as 0 to 200) to servo pwm values
  
@@ -108,3 +114,27 @@ PUB shutdown
 	bs2.PAUSE(5000)
 	bs2.HIGH(shutdown_pin)
 
+PUB POST | i
+    if do_POST == 1
+        i := base_pin
+        REPEAT 6  'cycle thru each motor and set it to reverse
+            servo.Servo(i, 1000)
+            
+        bs2.PAUSE(1000) 'wait 1 second
+                        
+        i := base_pin                
+        REPEAT 6  'cycle thru each motor and set it to off
+            servo.Servo(i, 1500)
+            
+         bs2.PAUSE(1000) 'wait 1 second
+         i := base_pin                
+         REPEAT 6  'cycle thru each motor and set it to forward
+            servo.Servo(i, 2000)
+            
+         bs2.PAUSE(1000) 'wait 1 second
+                         
+        i := base_pin                '
+        REPEAT 6  'cycle thru each motor and set it to off
+            servo.Servo(i, 1500)  
+            
+    RETURN             
