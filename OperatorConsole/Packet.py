@@ -33,11 +33,12 @@ class Packet:
         """
         packet = ""
         packet += "<"
-        packet += str(pin)
-        packet += str(value)
+        packet += chr(pin)
+        packet += chr(value)
         packet += ">"
 
-        return(packet)
+	# print(packet)        
+	return(packet)
 
     def to_values(self, packet):
         """

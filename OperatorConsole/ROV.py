@@ -120,13 +120,13 @@ rotation = [0, 0, 0]  # rotational velocity around x, y, and z axis
 acceleration = [0, 0, 0]
 
 hlf = 0  # horizontal left front
-hlb = 0  # horizontal left back
-hrf = 0  # horizontal right front
-hrb = 0  # horizontal right back
-vlf = 0  # vertical left front
-vlb = 0  # vertical left back
-vrf = 0  # vertical right front
-vrb = 0  # vertical right back
+hlb = 1  # horizontal left back
+hrf = 2  # horizontal right front
+hrb = 3  # horizontal right back
+vlf = 4  # vertical left front
+vlb = 4  # vertical left back
+vrf = 5  # vertical right front
+vrb = 5  # vertical right back
 
 # dictionary to store data for the motors. The value field is a list. The list
 # structure is [i/o pin, value, trim]
@@ -147,7 +147,8 @@ depth = 0
 heading = ""
 
 # serial port the propeller is connected to
-prop_port = '/dev/tty.usbserial-A10405UQ'
+# prop_port = '/dev/tty.usbserial-A10405UQ'
+prop_port = "/dev/ttyUSB0"
 
 # serial port the Fusion 9 DOF orientation sensor is  connected to.
 fusion_port = '/dev/'
@@ -168,15 +169,15 @@ def connect_prop():
         # ser.setPort("")
         # pass
     except:
+	print("Failed to connect propeller chip")
+	time.sleep(1)
         return False
     else:
         ser.write(b"<AA>")
-        # if ser.read() == '#':
-        #     return True
-        # else:
-        #     return False
-        return True
-
+        if ser.read() == '#':
+             return True
+        else:
+             return False
 
 def connect_fusion():
     """
@@ -369,14 +370,21 @@ def update():
     global hlf, hlb, hrf, hrb, vlf, vlb, vrf, vrb, prop_connected
     global fusion_connected, motors, ser, prop_connected
 
-    if not prop_connected:
-        prop_connected = connect_prop()
-    else:
-        for i in motors:
-            ser.write(com.to_packet(i[0], i[1]))
+    #if not prop_connected:
+    #    prop_connected = connect_prop()
+    #else:
+    for i in motors:
+	print(motors[i][0], motors[i][1])
+    	ser.write(com.to_packet(motors[i][0], motors[i][1]+100))
+    #msg = "<"
+    #msg += chr(1)
+    #msg += chr(120)
+    #msg += ">"
+    
+    #ser.write(msg)
 
-    if not fusion_connected:
-        fusion_connected = connect_fusion()
+    #if not fusion_connected:
+    #    fusion_connected = connect_fusion()
 
     y_axis = bmap['Y']()  # Left joystick Y axis
     x_axis = bmap['X']()  # Left joystick X axis

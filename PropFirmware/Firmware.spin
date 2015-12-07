@@ -57,7 +57,7 @@ VAR
   
 OBJ
   serial        : "Parallax Serial Terminal"
-  servo         : "PWM_32_v4"
+  servo         : "Servo32v7"
   bs2           : "BS2_Functions"
 
 PUB Main | pin, value, failed
@@ -71,7 +71,7 @@ PUB Main | pin, value, failed
   serial.start(115_200)
   servo.start
   bs2.start(20,21)
-  'POST
+  POST
   'serial.Str(String("Hello World"))
   repeat
 	if serial.CharIn == 60 '<'
@@ -80,11 +80,11 @@ PUB Main | pin, value, failed
 		if serial.CharIn == 62 '>'
 			serial.char(return_char)  ' send a character if the packet was recieved correclty
 			if pin < light_pin 
-				servo.Servo(pin, convert(value))
-                                           serial.Char(return_char)
-			if pin == light_pin
-				servo.Duty(pin, value, 5000)
-                                           serial.Char(return_char)
+				servo.set(pin, (convert(value)))
+                                serial.Char(return_char)
+			'if pin == light_pin
+			'	servo.Duty(pin, value, 5000)
+                          '                 serial.Char(return_char)
                 else
 	          serial.char(33)  ' send a "!" if the packet wasn't received correctly
 	else
@@ -103,7 +103,7 @@ PUB convert(value) | oldMin, oldMax, newMin, newMax, oldRange, newRange, newValu
   oldMin := 0
   oldMax := 200
   newMin := 1000
-  newMax := 1500
+  newMax := 2000
   
   oldRange := oldMax - oldMin
   newRange := newMax - newMin
@@ -118,23 +118,28 @@ PUB POST | i
     if do_POST == 1
         i := base_pin
         REPEAT 6  'cycle thru each motor and set it to reverse
-            servo.Servo(i, 1000)
+            servo.set(i, 1000)
+            i:= i+1
             
-        bs2.PAUSE(1000) 'wait 1 second
+        bs2.PAUSE(500) 'wait 1 second
                         
         i := base_pin                
         REPEAT 6  'cycle thru each motor and set it to off
-            servo.Servo(i, 1500)
+            servo.set(i, 1500)
+            i:= i+1
             
-         bs2.PAUSE(1000) 'wait 1 second
+         bs2.PAUSE(500) 'wait 1 second
          i := base_pin                
          REPEAT 6  'cycle thru each motor and set it to forward
-            servo.Servo(i, 2000)
+            servo.set(i, 2000)
+            i:= i+1
             
-         bs2.PAUSE(1000) 'wait 1 second
+         bs2.PAUSE(500) 'wait 1 second
                          
         i := base_pin                '
         REPEAT 6  'cycle thru each motor and set it to off
-            servo.Servo(i, 1500)  
+            servo.set(i, 1500)
+            i:= i+1
+
             
     RETURN             
