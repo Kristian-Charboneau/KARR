@@ -169,15 +169,16 @@ def connect_prop():
         # ser.setPort("")
         # pass
     except:
-	print("Failed to connect propeller chip")
-	time.sleep(1)
+        print("Failed to connect propeller chip")
+        time.sleep(1)
         return False
     else:
         ser.write(b"<AA>")
         if ser.read() == '#':
-             return True
+            return True
         else:
-             return False
+            return False
+
 
 def connect_fusion():
     """
@@ -370,17 +371,15 @@ def update():
     global hlf, hlb, hrf, hrb, vlf, vlb, vrf, vrb, prop_connected
     global fusion_connected, motors, ser, prop_connected
 
-    #if not prop_connected:
-    #    prop_connected = connect_prop()
-    #else:
-    for i in motors:
-	print(motors[i][0], motors[i][1])
-    	ser.write(com.to_packet(motors[i][0], motors[i][1]+100))
+    if prop_connected:
+        for i in motors:
+            print(motors[i][0], motors[i][1])
+            ser.write(com.to_packet(motors[i][0], motors[i][1]+100))
     #msg = "<"
     #msg += chr(1)
     #msg += chr(120)
     #msg += ">"
-    
+
     #ser.write(msg)
 
     #if not fusion_connected:
@@ -406,8 +405,8 @@ def main_screen():
     screen = ""
     if fusion_connected:
         heading, roll, pitch = fusion.read_euler()
-        screen = ('Heading={0:0.2F} Roll={1:0.2F} Pitch={2:0.2F}\tSys_cal={3} Gyro_cal={4} Accel_cal={5} Mag_cal={6}'.format(
-                heading, roll, pitch, sys, gyro, accel, mag))
+        screen = ('Heading={0:0.2F} Roll={1:0.2F} Pitch={2:0.2F}'.format(
+                heading, roll, pitch))
     else:
         screen = ('No orientation sensor detected')
     # screen = ("Depth = {}ft\nHeading = {}\nVelocity(ft/s) = {}\n"
