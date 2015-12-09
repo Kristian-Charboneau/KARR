@@ -148,7 +148,7 @@ heading = ""
 
 # serial port the propeller is connected to
 # prop_port = '/dev/tty.usbserial-A10405UQ'
-prop_port = "/dev/ttyUSB0"
+prop_port = "/dev/ttyUSB1"
 
 # serial port the Fusion 9 DOF orientation sensor is  connected to.
 fusion_port = '/dev/'

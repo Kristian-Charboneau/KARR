@@ -121,20 +121,20 @@ PUB POST | i
             servo.set(i, 1000)
             i:= i+1
             
-        bs2.PAUSE(500) 'wait 1 second
+        bs2.PAUSE(1000) 'wait 1 second
                         
         i := base_pin                
         REPEAT 6  'cycle thru each motor and set it to off
             servo.set(i, 1500)
             i:= i+1
             
-         bs2.PAUSE(500) 'wait 1 second
+         bs2.PAUSE(1000) 'wait 1 second
          i := base_pin                
          REPEAT 6  'cycle thru each motor and set it to forward
             servo.set(i, 2000)
             i:= i+1
             
-         bs2.PAUSE(500) 'wait 1 second
+         bs2.PAUSE(1000) 'wait 1 second
                          
         i := base_pin                '
         REPEAT 6  'cycle thru each motor and set it to off
