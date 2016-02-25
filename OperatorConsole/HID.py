@@ -6,28 +6,28 @@ Each button, hat, and joystick has it's own method
 @author:Kristian Charboneau
 """
 import pygame
+import sys
+import ControllerMapping
 
 pygame.init()
 
+# The Button mapping is different between operating systems. Thus a check
+# needs to be done to determine the propper mapping. The mapping might also
+# differ from device to device, even if they have the same OS. Thus a custom
+# mapping can be defined in ControllerMapping.py and specific thru the Gamepad
+# class method set_map_mode().
 
-button_map = {
-    'X': 0,
-    'Y': 3,
-    'A': 1,
-    'B': 2,
-    'R1': 5,
-    'L1': 4,
-    'R2': 7,
-    'L2': 6,
-    'R3': 11,
-    'L3': 10,
-    'Start': 9,
-    'Back': 8,
-    'RightX': 2,
-    'LeftX': 0,
-    'RightY': 3,
-    'LeftY': 1,
-}
+if sys.platform = 'linux2':
+    button_map = ControllerMapping.linux
+    map_mode = 'linux'
+
+else if sys.platform = 'darwin':
+    button_map = ControllerMapping.osx
+    map_mode = 'osx'
+
+else if sys.platform = 'sys32':
+    button_map = ControllerMapping.windows
+    map_mode = 'windows'
 
 
 class Gamepad:
@@ -66,6 +66,23 @@ class Gamepad:
         force pygame to read input from the gamepad
         """
         pygame.event.pump()
+
+    def get_map_mode(self):
+        """
+        Returns the controller mapping mode. Values are 'linux', 'osx', or
+        'windows'.
+        """
+
+    def set_map_mode(self, mode):
+        """
+        Sets the controller mapping mode. Values are 'linux', 'osx',
+        'windows', or a custom string with the name of a custom controller map
+        in ControllerMapping.py.
+        """
+        try:
+            exec("mapping = ControllerMapping.%s"%mode)
+        except:
+            return False
 
     def get_x(self):
         """
